@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Use this interactive Vedic astrology transit calculator to animate daily sidereal planetary positions, zodiac signs, nakshatras, padas and retrograde motion from 2000 to 2050.">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Vedic Astrology Transit Calculator and Animator">
+  <meta property="og:description" content="Explore daily sidereal transits on a circular zodiac wheel and North Indian Vedic chart, with nakshatras, padas, speeds and retrograde motion.">
+  <title>Vedic Astrology Transit Calculator and Animator | Jyotir</title>
+  <link rel="stylesheet" href="styles.css?v=20260714-7">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "name": "Jyotir Vedic Transit Player",
+          "applicationCategory": "LifestyleApplication",
+          "operatingSystem": "Any web browser",
+          "description": "An interactive Vedic astrology transit calculator for daily sidereal planetary positions, zodiac signs, nakshatras, padas and retrograde motion from 2000 to 2050.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Does this transit calculator use the sidereal zodiac?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. The player displays supplied sidereal longitudes through the twelve zodiac signs and twenty-seven nakshatras. Aries begins at zero degrees."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What is the difference between the circular wheel and North Indian chart?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The circular wheel emphasizes exact longitude, zodiac and nakshatra movement. The North Indian chart groups planets into fixed houses according to the ascendant selected by the user."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I view Vedic planetary transits for a specific date?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Choose any available year from 2000 to 2050, use the calendar to select a date, or scrub the daily timeline."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Does this tool replace a personal birth chart reading?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. Transit positions become personal only when they are compared with a natal chart, house lords, dashas and the broader chart context."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#controls">Skip to playback controls</a>
+  <header class="site-header">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true">ॐ</span>
+      <div>
+        <p class="eyebrow">Sidereal ephemeris · 2000-2050 (Lahiri)</p>
+        <h1>Vedic Planetary Transits</h1>
+      </div>
+    </div>
+    <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme" aria-pressed="false">
+      <span class="theme-icon" aria-hidden="true">☾</span>
+      <span class="theme-label">Dark</span>
+    </button>
+  </header>
+
+  <main class="app-layout">
+    <div class="main-column">
+      <section class="chart-panel" aria-labelledby="chart-heading">
+      <div class="chart-heading-row">
+        <div>
+          <p class="eyebrow">Daily sidereal positions</p>
+          <h2 id="chart-heading">Transit charts <span id="chart-year">2026</span></h2>
+        </div>
+        <div class="orientation-key" aria-label="Wheel orientation">
+          <span class="north-arrow" aria-hidden="true">↑</span>
+          <span id="orientation-text">0° Aries · clockwise</span>
+        </div>
+      </div>
+
+      <div class="chart-tabs" role="tablist" aria-label="Transit chart view">
+        <button id="wheel-tab" class="chart-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="wheel-panel">Circular Wheel</button>
+        <button id="north-tab" class="chart-tab" type="button" role="tab" aria-selected="false" aria-controls="north-panel" tabindex="-1">North Indian chart</button>
+      </div>
+
+      <div class="chart-stage">
+        <div id="wheel-panel" role="tabpanel" aria-labelledby="wheel-tab">
+          <div class="chart-shell" id="chart-shell">
+            <svg id="transit-wheel"></svg>
+            <div class="planet-tooltip" id="planet-tooltip" role="tooltip" aria-hidden="true" hidden></div>
+          </div>
+        </div>
+
+        <div id="north-panel" role="tabpanel" aria-labelledby="north-tab" hidden>
+          <div class="north-chart-toolbar">
+            <label for="ascendant-select">Ascendant</label>
+            <div class="select-wrap compact">
+              <select id="ascendant-select">
+                <option value="0" selected>Aries</option>
+                <option value="1">Taurus</option>
+                <option value="2">Gemini</option>
+                <option value="3">Cancer</option>
+                <option value="4">Leo</option>
+                <option value="5">Virgo</option>
+                <option value="6">Libra</option>
+                <option value="7">Scorpio</option>
+                <option value="8">Sagittarius</option>
+                <option value="9">Capricorn</option>
+                <option value="10">Aquarius</option>
+                <option value="11">Pisces</option>
+              </select>
+            </div>
+            <span>Houses remain fixed while signs rotate from the chosen ascendant.</span>
+          </div>
+          <div class="north-chart-shell">
+            <svg id="north-indian-chart"></svg>
+          </div>
+        </div>
+
+        <div class="loading-state" id="loading-state" role="status">
+          <span class="loading-orbit" aria-hidden="true"></span>
+          <strong>Reading the ephemeris</strong>
+          <span id="loading-message">Preparing daily positions…</span>
+        </div>
+        <div class="error-state" id="error-state" role="alert" hidden>
+          <span class="error-symbol" aria-hidden="true">!</span>
+          <div>
+            <strong>Ephemeris unavailable</strong>
+            <p id="error-message"></p>
+          </div>
+          <button id="retry-button" class="secondary-button" type="button">Try again</button>
+        </div>
+      </div>
+
+      <div class="wheel-legend" aria-label="Chart legend">
+        <span><i class="legend-dot direct"></i> Direct</span>
+        <span><i class="legend-dot retrograde"></i> Retrograde ℞</span>
+        <span><i class="legend-dot combust"></i> Combust C</span>
+        <span><i class="legend-dot stationary"></i> Stationary</span>
+        <span><i class="legend-ring"></i> Selected</span>
+      </div>
+      </section>
+
+      <section class="positions-panel" aria-labelledby="positions-heading">
+        <div class="positions-heading-row">
+          <div>
+            <p class="eyebrow">Daily ephemeris</p>
+            <h2 id="positions-heading">Current planetary positions</h2>
+          </div>
+          <output id="positions-date" class="positions-date">—</output>
+        </div>
+        <div class="positions-table-wrap">
+          <table class="positions-table">
+            <caption class="sr-only">Current sidereal positions for the selected date</caption>
+            <thead>
+              <tr>
+                <th scope="col">Planet name</th>
+                <th scope="col">Degrees</th>
+                <th scope="col">Sign</th>
+                <th scope="col">Nakshatra</th>
+                <th scope="col">Pada</th>
+                <th scope="col">Speed</th>
+                <th scope="col">Motion</th>
+                <th scope="col">Degrees Absolute</th>
+              </tr>
+            </thead>
+            <tbody id="positions-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side-column">
+      <section class="control-panel" id="controls" aria-labelledby="controls-heading">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Animation</p>
+            <h2 id="controls-heading">Playback</h2>
+          </div>
+          <output class="playback-status" id="playback-status">Paused</output>
+        </div>
+
+        <label class="field-label" for="year-select">Ephemeris year</label>
+        <div class="select-wrap">
+          <select id="year-select" aria-describedby="year-note"></select>
+        </div>
+        <p class="field-note" id="year-note">Daily records loaded from the local data folder.</p>
+
+        <div class="transport" aria-label="Playback transport">
+          <button id="restart-button" class="transport-button" type="button" aria-label="Restart year" title="Restart year">↶</button>
+          <button id="previous-button" class="transport-button" type="button" aria-label="Previous day" title="Previous day">−1</button>
+          <button id="play-button" class="transport-button primary" type="button" aria-label="Play daily animation"><span aria-hidden="true">▶</span><span>Play</span></button>
+          <button id="pause-button" class="transport-button primary" type="button" aria-label="Pause daily animation"><span aria-hidden="true">Ⅱ</span><span>Pause</span></button>
+          <button id="next-button" class="transport-button" type="button" aria-label="Next day" title="Next day">+1</button>
+          <button id="end-button" class="transport-button" type="button" aria-label="Jump to end of year" title="Jump to end">⇥</button>
+        </div>
+
+        <div class="timeline-heading">
+          <label for="date-slider">Timeline</label>
+          <input id="current-date" class="date-picker" type="date" aria-label="Choose transit date">
+        </div>
+        <input id="date-slider" class="timeline" type="range" min="0" max="364" value="0" step="1" aria-valuetext="Loading">
+        <div class="timeline-meta">
+          <span id="day-index">Day —</span>
+          <span id="record-count">— records</span>
+        </div>
+
+        <div class="control-grid">
+          <div>
+            <label class="field-label" for="speed-select">Playback speed</label>
+            <div class="select-wrap compact">
+              <select id="speed-select">
+                <option value="0.25">0.25×</option>
+                <option value="0.5">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="2">2×</option>
+                <option value="5">5×</option>
+                <option value="10">10×</option>
+              </select>
+            </div>
+          </div>
+          <label class="switch-field" for="trails-toggle">
+            <span>
+              <strong>Motion trail</strong>
+              <small>Selected body only</small>
+            </span>
+            <input id="trails-toggle" type="checkbox" role="switch">
+            <span class="switch-track" aria-hidden="true"></span>
+          </label>
+          <label class="switch-field outer-planets-field" for="outer-planets-toggle">
+            <span>
+              <strong>Outer planets</strong>
+              <small>Show Uranus, Neptune &amp; Pluto</small>
+            </span>
+            <input id="outer-planets-toggle" type="checkbox" role="switch">
+            <span class="switch-track" aria-hidden="true"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="details-panel" id="planet-details" aria-label="Planet details">
+        <div class="empty-details" id="empty-details">
+          <span class="empty-symbol" aria-hidden="true">✦</span>
+          <h2>Planet details</h2>
+          <p>Select any planet on either chart to keep its transit data in view while the year plays.</p>
+        </div>
+        <div id="selected-details" hidden></div>
+      </section>
+
+      <details class="guide-panel">
+        <summary>Reading the wheel</summary>
+        <p>The inner markers show exact sidereal longitude. The Moon uses its own innermost track, while close conjunctions stack inward without changing angle. The middle band is the zodiac; the outer band shows the 27 nakshatras.</p>
+      </details>
+    </aside>
+  </main>
+
+  <section class="seo-content" aria-labelledby="seo-heading">
+    <div class="seo-intro">
+      <p class="eyebrow">A practical Jyotish guide</p>
+      <h2 id="seo-heading">Vedic astrology transit calculator for daily sidereal planetary movement</h2>
+      <p>If you have been searching for a Vedic astrology transit calculator that lets you watch the planets move instead of studying a static list, you are in the right place. This player follows daily sidereal planetary positions from 2000 to 2050 and connects every longitude with its zodiac sign, nakshatra and pada.</p>
+      <p>Use the animation to notice sign changes, retrograde periods, conjunctions and shifts in planetary speed. The stars can illuminate timing and patterns, but they do not remove personal choice. A transit is most useful when it becomes a starting point for thoughtful observation.</p>
+      <p>For precise planetary transit calculations by date, time, second and location, use the <a href="https://moondasha.com/planetary-positions">Moon Dasha planetary positions calculator</a>.</p>
+    </div>
+
+    <div class="seo-grid">
+      <article class="seo-article">
+        <h3>How to use the daily planetary transit player</h3>
+        <p>Select a year, press play, or choose an exact date from the calendar. Each animation step represents one day. The table below the charts gives the same data in a precise format, including degrees within the sign, absolute longitude, nakshatra, pada, daily speed and motion state.</p>
+        <p>The circular wheel places 0° Aries at the top and increases longitude clockwise. It is the clearest view for studying exact angular distance. Turn on motion trails when you want to follow a selected planet across several recent days.</p>
+      </article>
+
+      <article class="seo-article">
+        <h3>Read transits in a North Indian Vedic astrology chart</h3>
+        <p>The North Indian chart keeps the twelve houses fixed. Choose an ascendant to place a sign in the first house, then the remaining signs follow through the chart. Planets move from house to house as their sidereal signs change.</p>
+        <p>This view is useful when you want to connect a transit with house themes. Remember that the ascendant selector is manual. For a personal interpretation, use the ascendant from an accurately calculated birth chart.</p>
+      </article>
+
+      <article class="seo-article">
+        <h3>Zodiac signs, nakshatras and padas explained</h3>
+        <p>The sidereal zodiac contains twelve signs of 30° each. Vedic astrology also divides the full circle into twenty-seven <em>nakshatras</em>, or lunar mansions, measuring 13°20′ each. Every nakshatra contains four padas of 3°20′.</p>
+        <p>The sign describes the broader field of expression. The nakshatra gives a finer layer of symbolism and motivation, while the pada narrows the position further. Watching all three together reveals details that a sign-only transit list can miss.</p>
+      </article>
+
+      <article class="seo-article">
+        <h3>Direct, retrograde, stationary and combust planets</h3>
+        <p>A direct planet advances through zodiac longitude. A retrograde planet appears to move backward from Earth, while a stationary planet is changing direction so slowly that its daily motion is almost zero. The player derives these states from consecutive daily positions and animates the correct direction across 0° Aries.</p>
+        <p>A small C marks planets within the configured combustion distance from the Sun. The Moon and lunar nodes are not treated as combust here. No single condition should be interpreted in isolation. In Jyotish, a transit gains meaning through the natal chart, planetary dignity, aspects, house rulership and the active dasha period.</p>
+      </article>
+    </div>
+
+    <section class="seo-faq" aria-labelledby="faq-heading">
+      <p class="eyebrow">Common questions</p>
+      <h2 id="faq-heading">Vedic transit calculator FAQ</h2>
+      <div class="faq-list">
+        <details>
+          <summary>Does this transit calculator use the sidereal zodiac?</summary>
+          <p>Yes. The player displays the supplied sidereal longitudes through all twelve zodiac signs and twenty-seven nakshatras, beginning with 0° Aries.</p>
+        </details>
+        <details>
+          <summary>What is the difference between the circular wheel and North Indian chart?</summary>
+          <p>The circular wheel emphasizes exact longitude, zodiac and nakshatra movement. The North Indian chart groups planets into fixed houses according to the ascendant you select.</p>
+        </details>
+        <details>
+          <summary>Can I view Vedic planetary transits for a specific date?</summary>
+          <p>Yes. Choose any available year from 2000 to 2050, select a date from the calendar, or drag the daily timeline to the required record.</p>
+        </details>
+        <details>
+          <summary>Does this tool replace a personal birth chart reading?</summary>
+          <p>No. Transit positions become personal when they are compared with your natal chart, house lords, dashas and the broader chart context. Use this tool as a clear timing reference rather than an absolute prediction.</p>
+        </details>
+      </div>
+    </section>
+  </section>
+
+  <footer>
+    <p>Positions are read directly from the local ephemeris files. Motion state and daily speed are derived from consecutive dates.</p>
+  </footer>
+  <script type="module" src="js/app.js?v=20260714-6"></script>
+</body>
+</html>
