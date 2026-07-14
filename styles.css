@@ -160,6 +160,18 @@ h2 { margin-bottom: 0; font-size: 1.08rem; letter-spacing: -0.01em; }
 }
 .icon-button:disabled, .secondary-button:disabled, .transport-button:disabled { opacity: 0.42; cursor: not-allowed; }
 
+.header-actions { display: flex; justify-self: end; align-items: center; gap: 10px; }
+.github-link {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--text-primary);
+}
+.github-link svg { width: 20px; height: 20px; }
+
 .theme-toggle {
   min-width: 92px;
   padding: 9px 13px;
@@ -458,7 +470,7 @@ footer p { margin: 0; }
 
 @media (max-width: 1120px) {
   .site-header { grid-template-columns: 1fr auto; }
-  .theme-toggle { grid-column: 2; grid-row: 1; }
+  .header-actions { grid-column: 2; grid-row: 1; }
   .app-layout { grid-template-columns: minmax(0, 1fr) 320px; }
   .chart-panel { padding: 18px; }
   .positions-panel { padding: 20px; }
