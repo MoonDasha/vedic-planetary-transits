@@ -256,3 +256,7 @@ The interface includes semantic controls, keyboard-accessible planet markers, vi
 This repository visualizes the supplied daily ephemeris records. It does not calculate astronomical positions in the browser, and it does not claim second-level accuracy. The dataset also does not contain geographic coordinates or time-of-day values.
 
 Astrology is best used as a reflective and interpretive tool. Planetary transits can describe timing and themes, but their effects depend on the complete natal chart and personal circumstances. They should not replace professional medical, legal, financial, or mental health advice.
+
+## License
+
+Vedic Planetary Transits is released under the [MIT License](LICENSE). You may use, modify, and distribute the project under the terms of that license.
