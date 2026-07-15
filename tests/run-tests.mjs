@@ -3,7 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { assignPlanetLanes } from '../js/collision.js';
 import { BODY_BY_ID, CHART, getCombustionLimit } from '../js/constants.js';
 import { normalizeEphemeris } from '../js/ephemeris.js';
-import { getHouseForLongitude } from '../js/north-indian-chart.js';
+import {
+  getContinuousHousePoint,
+  getHouseForLongitude,
+  layoutContinuousBodies,
+} from '../js/north-indian-chart.js';
 import {
   getNakshatraPosition,
   longitudeToPoint,
@@ -60,6 +64,57 @@ assert.equal(getHouseForLongitude(35, 0), 2);
 assert.equal(getHouseForLongitude(355, 0), 12);
 assert.equal(getHouseForLongitude(95, 3), 1, 'Cancer belongs to house one for Cancer ascendant');
 assert.equal(getHouseForLongitude(5, 3), 10, 'Aries becomes the tenth house for Cancer ascendant');
+
+const houseOneIngress = getContinuousHousePoint(0, 0);
+const houseOneFirstQuarter = getContinuousHousePoint(7.5, 0);
+const houseOneMiddle = getContinuousHousePoint(15, 0);
+const houseOneThirdQuarter = getContinuousHousePoint(22.5, 0);
+const houseOneEgress = getContinuousHousePoint(29.999999, 0);
+const houseTwoIngress = getContinuousHousePoint(30, 0);
+assert.equal(houseOneIngress.house, 1);
+assert.deepEqual(
+  { x: Math.round(houseOneIngress.x), y: Math.round(houseOneIngress.y) },
+  { x: 490, y: 130 },
+  '0° should begin at the incoming house boundary',
+);
+assert.deepEqual(
+  { x: Math.round(houseOneFirstQuarter.x), y: Math.round(houseOneFirstQuarter.y) },
+  { x: 445, y: 180 },
+  'the first half of central house one should be a straight segment',
+);
+assert.deepEqual(
+  { x: Math.round(houseOneMiddle.x), y: Math.round(houseOneMiddle.y) },
+  { x: 400, y: 230 },
+  '15° should pass through the visual house center',
+);
+assert.deepEqual(
+  { x: Math.round(houseOneThirdQuarter.x), y: Math.round(houseOneThirdQuarter.y) },
+  { x: 355, y: 180 },
+  'the second half of central house one should be a straight segment',
+);
+const houseFourFirstQuarter = getContinuousHousePoint(97.5, 0);
+assert.deepEqual(
+  { x: Math.round(houseFourFirstQuarter.x), y: Math.round(houseFourFirstQuarter.y) },
+  { x: 180, y: 355 },
+  'central house four should also use straight segments',
+);
+assert.ok(
+  Math.hypot(houseOneEgress.x - houseTwoIngress.x, houseOneEgress.y - houseTwoIngress.y) < 0.001,
+  '30° egress and the next 0° ingress should share a boundary point',
+);
+
+const continuousConjunction = layoutContinuousBodies([
+  { config: { id: 'saturn', defaultOrder: 6 }, longitude: 335 },
+  { config: { id: 'mercury', defaultOrder: 3 }, longitude: 335 },
+], 0);
+const saturnContinuous = continuousConjunction.get('saturn');
+const mercuryContinuous = continuousConjunction.get('mercury');
+assert.equal(saturnContinuous.groupSize, 2);
+assert.equal(mercuryContinuous.groupSize, 2);
+assert.ok(
+  Math.hypot(saturnContinuous.x - mercuryContinuous.x, saturnContinuous.y - mercuryContinuous.y) >= 28,
+  'planets sharing a path position should receive side-by-side offsets',
+);
 
 const raw2024 = await readYear(2024);
 const normalized2024 = normalizeEphemeris(raw2024, 2024);

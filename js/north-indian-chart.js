@@ -1,5 +1,10 @@
 import { ZODIAC } from './constants.js';
-import { formatDate, formatWithinSign, getZodiacPosition } from './utils.js';
+import {
+  formatDate,
+  formatWithinSign,
+  getZodiacPosition,
+  normalizeLongitude,
+} from './utils.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const HOUSE_CENTERS = [
@@ -13,6 +18,42 @@ const LABEL_POINTS = [
   [732, 565], [452, 400], [732, 235], [565, 68],
 ];
 
+// Each point is the middle of the shared boundary between one house and the
+// next. Increasing zodiac longitude follows these points from H1 through H12.
+const HOUSE_EXIT_POINTS = [
+  [310, 130], [130, 130], [130, 310], [130, 490],
+  [130, 670], [310, 670], [490, 670], [670, 670],
+  [670, 490], [670, 310], [670, 130], [490, 130],
+];
+
+export const NORTH_MOTION_MODES = Object.freeze({
+  HOUSE_JUMP: 'house-jump',
+  CONTINUOUS: 'continuous',
+});
+
+export const CONTINUOUS_COLLISION_DISTANCE = 40;
+
+// Every path enters a house at 0°, passes through its visual center at 15°,
+// and reaches the next shared boundary at 30°. The central diamond houses
+// (1, 4, 7, and 10) use two straight segments; the surrounding houses use a
+// quadratic curve. Consecutive paths share endpoints, keeping sign changes
+// continuous in both direct and retrograde motion.
+export const HOUSE_MOTION_PATHS = HOUSE_CENTERS.map(([centerX, centerY], houseIndex) => {
+  const start = HOUSE_EXIT_POINTS[(houseIndex + 11) % 12];
+  const end = HOUSE_EXIT_POINTS[houseIndex];
+  const control = [
+    centerX * 2 - (start[0] + end[0]) / 2,
+    centerY * 2 - (start[1] + end[1]) / 2,
+  ];
+  return {
+    start,
+    center: [centerX, centerY],
+    control,
+    end,
+    straight: houseIndex % 3 === 0,
+  };
+});
+
 function svgElement(name, attributes = {}, text = '') {
   const element = document.createElementNS(SVG_NS, name);
   Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
@@ -23,6 +64,118 @@ function svgElement(name, attributes = {}, text = '') {
 export function getHouseForLongitude(longitude, ascendantIndex = 0) {
   const signIndex = getZodiacPosition(longitude).index;
   return ((signIndex - ascendantIndex + 12) % 12) + 1;
+}
+
+/** Map a longitude to its exact 0°–30° progress along a North chart house. */
+export function getContinuousHousePoint(longitude, ascendantIndex = 0) {
+  const zodiac = getZodiacPosition(longitude);
+  const house = getHouseForLongitude(longitude, ascendantIndex);
+  const progress = zodiac.degreesWithinSign / 30;
+  const { start, center, control, end, straight } = HOUSE_MOTION_PATHS[house - 1];
+  let x;
+  let y;
+  let tangentX;
+  let tangentY;
+
+  if (straight) {
+    const firstHalf = progress <= 0.5;
+    const segmentStart = firstHalf ? start : center;
+    const segmentEnd = firstHalf ? center : end;
+    const segmentProgress = firstHalf ? progress * 2 : (progress - 0.5) * 2;
+    x = segmentStart[0] + (segmentEnd[0] - segmentStart[0]) * segmentProgress;
+    y = segmentStart[1] + (segmentEnd[1] - segmentStart[1]) * segmentProgress;
+    tangentX = segmentEnd[0] - segmentStart[0];
+    tangentY = segmentEnd[1] - segmentStart[1];
+  } else {
+    const inverse = 1 - progress;
+    x = inverse ** 2 * start[0] + 2 * inverse * progress * control[0] + progress ** 2 * end[0];
+    y = inverse ** 2 * start[1] + 2 * inverse * progress * control[1] + progress ** 2 * end[1];
+    tangentX = 2 * inverse * (control[0] - start[0]) + 2 * progress * (end[0] - control[0]);
+    tangentY = 2 * inverse * (control[1] - start[1]) + 2 * progress * (end[1] - control[1]);
+  }
+  const length = Math.hypot(tangentX, tangentY) || 1;
+  return {
+    x,
+    y,
+    tangentX: tangentX / length,
+    tangentY: tangentY / length,
+    house,
+    houseIndex: house - 1,
+    degreesWithinSign: zodiac.degreesWithinSign,
+    progress,
+  };
+}
+
+function connectedPositionGroups(entries, threshold) {
+  const groups = [];
+  const visited = new Set();
+  entries.forEach((entry, startIndex) => {
+    if (visited.has(startIndex)) return;
+    const indexes = [startIndex];
+    const group = [];
+    visited.add(startIndex);
+    while (indexes.length) {
+      const index = indexes.shift();
+      const current = entries[index];
+      group.push(current);
+      entries.forEach((candidate, candidateIndex) => {
+        if (visited.has(candidateIndex)) return;
+        if (Math.hypot(current.base.x - candidate.base.x, current.base.y - candidate.base.y) <= threshold) {
+          visited.add(candidateIndex);
+          indexes.push(candidateIndex);
+        }
+      });
+    }
+    groups.push(group);
+  });
+  return groups;
+}
+
+function continuousMarkerScale(groupSize) {
+  if (groupSize <= 1) return { iconSize: 27, fontSize: 9.2, gap: 0 };
+  if (groupSize <= 3) return { iconSize: 23, fontSize: 8.2, gap: 29 };
+  if (groupSize <= 5) return { iconSize: 19, fontSize: 7.2, gap: 24 };
+  return { iconSize: 16, fontSize: 6.5, gap: 20 };
+}
+
+/**
+ * Keep true degree positions on the path, then separate only colliding markers
+ * along a perpendicular lane. Priority order makes each side assignment stable.
+ */
+export function layoutContinuousBodies(bodies, ascendantIndex = 0) {
+  const entries = bodies.map((body) => ({
+    ...body,
+    base: getContinuousHousePoint(body.longitude, ascendantIndex),
+  }));
+  const placements = new Map();
+  connectedPositionGroups(entries, CONTINUOUS_COLLISION_DISTANCE).forEach((group) => {
+    group.sort((a, b) => a.config.defaultOrder - b.config.defaultOrder);
+    const scale = continuousMarkerScale(group.length);
+    let tangentX = group.reduce((sum, entry) => sum + entry.base.tangentX, 0);
+    let tangentY = group.reduce((sum, entry) => sum + entry.base.tangentY, 0);
+    const tangentLength = Math.hypot(tangentX, tangentY);
+    if (tangentLength < 0.01) {
+      tangentX = group[0].base.tangentX;
+      tangentY = group[0].base.tangentY;
+    } else {
+      tangentX /= tangentLength;
+      tangentY /= tangentLength;
+    }
+    const normalX = -tangentY;
+    const normalY = tangentX;
+    group.forEach((entry, index) => {
+      const offset = (index - (group.length - 1) / 2) * scale.gap;
+      placements.set(entry.config.id, {
+        ...entry.base,
+        x: entry.base.x + normalX * offset,
+        y: entry.base.y + normalY * offset,
+        iconSize: scale.iconSize,
+        fontSize: scale.fontSize,
+        groupSize: group.length,
+      });
+    });
+  });
+  return placements;
 }
 
 function layoutForCount(count) {
@@ -50,6 +203,7 @@ export class NorthIndianTransitChart {
     this.onSelect = onSelect;
     this.onDeselect = onDeselect;
     this.ascendantIndex = 0;
+    this.motionMode = NORTH_MOTION_MODES.HOUSE_JUMP;
     this.bodyConfigs = [];
     this.markers = new Map();
     this.hiddenBodyIds = new Set();
@@ -65,7 +219,7 @@ export class NorthIndianTransitChart {
     this.svg.setAttribute('aria-labelledby', 'north-chart-title north-chart-description');
     this.svg.append(
       svgElement('title', { id: 'north-chart-title' }, 'North Indian sidereal transit chart'),
-      svgElement('desc', { id: 'north-chart-description' }, 'A fixed-house North Indian Vedic chart. The selected ascendant places its sign in the first house and the remaining signs proceed counterclockwise through the houses.'),
+      svgElement('desc', { id: 'north-chart-description' }, 'A fixed-house North Indian Vedic chart with optional continuous degree-based planetary motion. The selected ascendant places its sign in the first house.'),
     );
 
     const structure = svgElement('g', { class: 'north-chart-structure', 'aria-hidden': 'true' });
@@ -110,6 +264,13 @@ export class NorthIndianTransitChart {
     this.houseLabels.forEach((label, houseIndex) => {
       label.textContent = ZODIAC[(this.ascendantIndex + houseIndex) % 12].name;
     });
+    if (this.currentRecord) this.renderRecord(this.currentRecord);
+  }
+
+  setMotionMode(mode) {
+    this.motionMode = mode === NORTH_MOTION_MODES.CONTINUOUS
+      ? NORTH_MOTION_MODES.CONTINUOUS
+      : NORTH_MOTION_MODES.HOUSE_JUMP;
     if (this.currentRecord) this.renderRecord(this.currentRecord);
   }
 
@@ -187,6 +348,102 @@ export class NorthIndianTransitChart {
     this.markers.forEach((marker, id) => marker.group.classList.toggle('is-selected', id === bodyId));
   }
 
+  visibleBodies(record, toRecord = record, progress = 0) {
+    const bodies = [];
+    this.bodyConfigs.forEach((config) => {
+      const planet = record.planets[config.id];
+      if (!planet || this.hiddenBodyIds.has(config.id)) return;
+      const nextPlanet = toRecord?.planets[config.id] ?? planet;
+      const fromUnwrapped = Number.isFinite(planet.unwrappedLongitude)
+        ? planet.unwrappedLongitude
+        : planet.longitude;
+      const toUnwrapped = Number.isFinite(nextPlanet.unwrappedLongitude)
+        ? nextPlanet.unwrappedLongitude
+        : fromUnwrapped;
+      bodies.push({
+        config,
+        planet,
+        longitude: normalizeLongitude(fromUnwrapped + (toUnwrapped - fromUnwrapped) * progress),
+      });
+    });
+    return bodies;
+  }
+
+  applyMarker(marker, planet, houseIndex, placement) {
+    const { x, y, iconSize, fontSize } = placement;
+    marker.group.setAttribute('transform', `translate(${x.toFixed(3)} ${y.toFixed(3)})`);
+    marker.group.removeAttribute('hidden');
+    marker.group.classList.toggle('is-selected', marker.config.id === this.selectedBodyId);
+    marker.group.classList.toggle('is-retrograde', planet.motion === 'retrograde');
+    marker.group.classList.toggle('is-combust', planet.combust === true);
+    marker.group.setAttribute('aria-label', `${marker.config.displayName}, house ${houseIndex + 1}, ${formatWithinSign(planet.longitude)}${planet.combust ? ', combust' : ''}. Select for details.`);
+
+    if (marker.image) {
+      marker.image.setAttribute('x', -iconSize / 2);
+      marker.image.setAttribute('y', -iconSize / 2 - 7);
+      marker.image.setAttribute('width', iconSize);
+      marker.image.setAttribute('height', iconSize);
+    }
+    marker.fallback.setAttribute('y', -7);
+    marker.fallback.style.fontSize = `${Math.max(11, iconSize * 0.72)}px`;
+    marker.name.setAttribute('y', iconSize / 2 + 7);
+    marker.name.style.fontSize = `${fontSize}px`;
+    marker.status.setAttribute('x', iconSize / 2 + 8);
+    marker.status.setAttribute('y', -iconSize / 2 - 5);
+    marker.status.textContent = `${planet.motion === 'retrograde' ? '℞' : ''}${planet.combust ? 'C' : ''}`;
+    marker.selected.setAttribute('x', -Math.max(22, iconSize / 2 + 8));
+    marker.selected.setAttribute('y', -iconSize / 2 - 15);
+    marker.selected.setAttribute('width', Math.max(44, iconSize + 16));
+    marker.selected.setAttribute('height', iconSize + 31);
+  }
+
+  renderHouseJump(bodies) {
+    const houses = Array.from({ length: 12 }, () => []);
+    bodies.forEach((body) => {
+      const house = getHouseForLongitude(body.longitude, this.ascendantIndex);
+      houses[house - 1].push(body);
+    });
+
+    const visible = new Set();
+    houses.forEach((houseBodies, houseIndex) => {
+      houseBodies.sort((a, b) => a.config.defaultOrder - b.config.defaultOrder);
+      const layout = layoutForCount(houseBodies.length);
+      houseBodies.forEach(({ config, planet }, index) => {
+        const marker = this.markers.get(config.id);
+        if (!marker) return;
+        visible.add(config.id);
+        const [houseX, houseY] = HOUSE_CENTERS[houseIndex];
+        const offset = layoutPoint(index, houseBodies.length, layout);
+        this.applyMarker(marker, planet, houseIndex, {
+          x: houseX + offset.x,
+          y: houseY + offset.y,
+          iconSize: layout.iconSize,
+          fontSize: layout.fontSize,
+        });
+      });
+    });
+    this.hideInactiveMarkers(visible);
+  }
+
+  renderContinuous(bodies) {
+    const placements = layoutContinuousBodies(bodies, this.ascendantIndex);
+    const visible = new Set();
+    bodies.forEach(({ config, planet }) => {
+      const marker = this.markers.get(config.id);
+      const placement = placements.get(config.id);
+      if (!marker || !placement) return;
+      visible.add(config.id);
+      this.applyMarker(marker, planet, placement.houseIndex, placement);
+    });
+    this.hideInactiveMarkers(visible);
+  }
+
+  hideInactiveMarkers(visible) {
+    this.markers.forEach((marker, id) => {
+      if (!visible.has(id)) marker.group.setAttribute('hidden', '');
+    });
+  }
+
   renderRecord(record) {
     if (!record) return;
     this.currentRecord = record;
@@ -195,54 +452,17 @@ export class NorthIndianTransitChart {
       day: 'numeric',
       year: 'numeric',
     });
-    const houses = Array.from({ length: 12 }, () => []);
-    this.bodyConfigs.forEach((config) => {
-      const planet = record.planets[config.id];
-      if (!planet || this.hiddenBodyIds.has(config.id)) return;
-      const house = getHouseForLongitude(planet.longitude, this.ascendantIndex);
-      houses[house - 1].push({ config, planet });
-    });
+    const bodies = this.visibleBodies(record);
+    if (this.motionMode === NORTH_MOTION_MODES.CONTINUOUS) {
+      this.renderContinuous(bodies);
+    } else {
+      this.renderHouseJump(bodies);
+    }
+  }
 
-    const visible = new Set();
-    houses.forEach((bodies, houseIndex) => {
-      bodies.sort((a, b) => a.config.defaultOrder - b.config.defaultOrder);
-      const layout = layoutForCount(bodies.length);
-      bodies.forEach(({ config, planet }, index) => {
-        const marker = this.markers.get(config.id);
-        if (!marker) return;
-        visible.add(config.id);
-        const [houseX, houseY] = HOUSE_CENTERS[houseIndex];
-        const offset = layoutPoint(index, bodies.length, layout);
-        marker.group.setAttribute('transform', `translate(${houseX + offset.x} ${houseY + offset.y})`);
-        marker.group.removeAttribute('hidden');
-        marker.group.classList.toggle('is-selected', config.id === this.selectedBodyId);
-        marker.group.classList.toggle('is-retrograde', planet.motion === 'retrograde');
-        marker.group.classList.toggle('is-combust', planet.combust === true);
-        marker.group.setAttribute('aria-label', `${config.displayName}, house ${houseIndex + 1}, ${formatWithinSign(planet.longitude)}${planet.combust ? ', combust' : ''}. Select for details.`);
-
-        const iconSize = layout.iconSize;
-        if (marker.image) {
-          marker.image.setAttribute('x', -iconSize / 2);
-          marker.image.setAttribute('y', -iconSize / 2 - 7);
-          marker.image.setAttribute('width', iconSize);
-          marker.image.setAttribute('height', iconSize);
-        }
-        marker.fallback.setAttribute('y', -7);
-        marker.fallback.style.fontSize = `${Math.max(12, iconSize * 0.72)}px`;
-        marker.name.setAttribute('y', iconSize / 2 + 7);
-        marker.name.style.fontSize = `${layout.fontSize}px`;
-        marker.status.setAttribute('x', iconSize / 2 + 8);
-        marker.status.setAttribute('y', -iconSize / 2 - 5);
-        marker.status.textContent = `${planet.motion === 'retrograde' ? '℞' : ''}${planet.combust ? 'C' : ''}`;
-        marker.selected.setAttribute('x', -Math.max(22, iconSize / 2 + 8));
-        marker.selected.setAttribute('y', -iconSize / 2 - 15);
-        marker.selected.setAttribute('width', Math.max(44, iconSize + 16));
-        marker.selected.setAttribute('height', iconSize + 31);
-      });
-    });
-
-    this.markers.forEach((marker, id) => {
-      if (!visible.has(id)) marker.group.setAttribute('hidden', '');
-    });
+  renderFrame(fromRecord, toRecord, progress = 0) {
+    if (!fromRecord || this.motionMode !== NORTH_MOTION_MODES.CONTINUOUS) return;
+    this.currentRecord = fromRecord;
+    this.renderContinuous(this.visibleBodies(fromRecord, toRecord, progress));
   }
 }

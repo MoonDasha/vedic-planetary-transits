@@ -80,7 +80,9 @@ The Moon always uses its own innermost track. Slow planets such as Pluto, Neptun
 
 The North Indian chart uses fixed house positions. Aries is the default ascendant. Selecting a different ascendant rotates the zodiac signs through the twelve houses while the house geometry remains fixed.
 
-Every occupied house displays both planet icons and planet names. When several planets share one house, the chart reduces their icon and label sizes to keep the group legible. Playback, date selection, retrograde status, combustion, outer-planet visibility, and planet selection stay synchronized with the circular wheel.
+The motion control provides two views. **House Jump** places planets in a stable layout at the center of their current house. **Continuous motion** maps 0° to the incoming house boundary, 15° to the house center, and 30° to the outgoing boundary. This makes degree progress, sign changes, and close conjunctions visible while playback runs. Planets at the same or nearby path position are placed in deterministic side-by-side lanes without changing their true longitude.
+
+Every occupied house displays both planet icons and planet names. House Jump reduces icon and label sizes when occupancy increases, while Continuous motion scales close groups to keep them legible. Playback, date selection, retrograde status, combustion, outer-planet visibility, and planet selection stay synchronized with the circular wheel.
 
 The selected ascendant is a viewing control. It does not calculate a birth ascendant because the local dataset contains daily positions without a birth time or geographic location. Use the [Moon Dasha planetary positions tool](https://moondasha.com/planetary-positions) when exact time and location are required.
 

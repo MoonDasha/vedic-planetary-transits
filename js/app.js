@@ -1,6 +1,6 @@
 import { TransitPlayback } from './animation.js';
 import { TransitChart } from './chart.js';
-import { NorthIndianTransitChart } from './north-indian-chart.js?v=20260714-4';
+import { NorthIndianTransitChart } from './north-indian-chart.js?v=20260715-3';
 import { YEAR_MAX, YEAR_MIN } from './constants.js?v=20260715-1';
 import { EphemerisError, loadEphemerisYear } from './ephemeris.js';
 import {
@@ -30,6 +30,7 @@ const elements = {
   outerPlanets: document.querySelector('#outer-planets-toggle'),
   currentDate: document.querySelector('#current-date'),
   ascendant: document.querySelector('#ascendant-select'),
+  northMotionInputs: document.querySelectorAll('input[name="north-motion"]'),
   wheelTab: document.querySelector('#wheel-tab'),
   northTab: document.querySelector('#north-tab'),
   wheelPanel: document.querySelector('#wheel-panel'),
@@ -74,6 +75,7 @@ const playback = new TransitPlayback({
   reducedMotion: reducedMotionQuery.matches,
   onFrame(fromRecord, toRecord, progress, index) {
     chart.renderFrame(fromRecord, toRecord, progress);
+    northChart.renderFrame(fromRecord, toRecord, progress);
     renderTrails(index);
   },
   onStep(index, record) {
@@ -190,6 +192,7 @@ function updateControlAvailability() {
   elements.outerPlanets.disabled = loading || noData;
   elements.currentDate.disabled = loading || noData;
   elements.ascendant.disabled = loading || noData;
+  elements.northMotionInputs.forEach((input) => { input.disabled = loading || noData; });
 }
 
 function updateDateInterface(index, record) {
@@ -372,8 +375,9 @@ function switchChartTab(nextTab, focus = false) {
   elements.northTab.tabIndex = showNorth ? 0 : -1;
   elements.wheelPanel.hidden = showNorth;
   elements.northPanel.hidden = !showNorth;
+  const northMotion = document.querySelector('input[name="north-motion"]:checked')?.value ?? 'house-jump';
   elements.orientationText.textContent = showNorth
-    ? `${elements.ascendant.options[elements.ascendant.selectedIndex].text} ascendant · fixed houses`
+    ? `${elements.ascendant.options[elements.ascendant.selectedIndex].text} ascendant · ${northMotion === 'continuous' ? 'continuous motion' : 'house jump'}`
     : '0° Aries · clockwise';
   if (showNorth) northChart.renderRecord(currentDataset?.records[playback.index]);
   if (focus) (showNorth ? elements.northTab : elements.wheelTab).focus();
@@ -407,6 +411,12 @@ function bindEvents() {
     northChart.setAscendant(Number(elements.ascendant.value));
     if (!elements.northPanel.hidden) switchChartTab('north');
   });
+  elements.northMotionInputs.forEach((input) => input.addEventListener('change', () => {
+    if (!input.checked) return;
+    northChart.setMotionMode(input.value);
+    playback.renderStill();
+    if (!elements.northPanel.hidden) switchChartTab('north');
+  }));
   elements.wheelTab.addEventListener('click', () => switchChartTab('wheel'));
   elements.northTab.addEventListener('click', () => switchChartTab('north'));
   [elements.wheelTab, elements.northTab].forEach((tab) => tab.addEventListener('keydown', (event) => {

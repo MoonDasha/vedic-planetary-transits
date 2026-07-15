@@ -10,7 +10,7 @@
   <meta property="og:title" content="Vedic Astrology Planetary Transits Animator">
   <meta property="og:description" content="Explore daily sidereal transits on a circular zodiac wheel and North Indian Vedic chart, with nakshatras, padas, speeds and retrograde motion.">
   <title>Vedic Astrology Planetary Transits Animator</title>
-  <link rel="stylesheet" href="styles.css?v=20260714-8">
+  <link rel="stylesheet" href="styles.css?v=20260715-3">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -118,24 +118,38 @@
 
         <div id="north-panel" role="tabpanel" aria-labelledby="north-tab" hidden>
           <div class="north-chart-toolbar">
-            <label for="ascendant-select">Ascendant</label>
-            <div class="select-wrap compact">
-              <select id="ascendant-select">
-                <option value="0" selected>Aries</option>
-                <option value="1">Taurus</option>
-                <option value="2">Gemini</option>
-                <option value="3">Cancer</option>
-                <option value="4">Leo</option>
-                <option value="5">Virgo</option>
-                <option value="6">Libra</option>
-                <option value="7">Scorpio</option>
-                <option value="8">Sagittarius</option>
-                <option value="9">Capricorn</option>
-                <option value="10">Aquarius</option>
-                <option value="11">Pisces</option>
-              </select>
+            <div class="north-toolbar-field">
+              <label for="ascendant-select">Ascendant</label>
+              <div class="select-wrap compact">
+                <select id="ascendant-select">
+                  <option value="0" selected>Aries</option>
+                  <option value="1">Taurus</option>
+                  <option value="2">Gemini</option>
+                  <option value="3">Cancer</option>
+                  <option value="4">Leo</option>
+                  <option value="5">Virgo</option>
+                  <option value="6">Libra</option>
+                  <option value="7">Scorpio</option>
+                  <option value="8">Sagittarius</option>
+                  <option value="9">Capricorn</option>
+                  <option value="10">Aquarius</option>
+                  <option value="11">Pisces</option>
+                </select>
+              </div>
             </div>
-            <span>Houses remain fixed while signs rotate from the chosen ascendant.</span>
+            <fieldset class="north-motion-control">
+              <legend>Motion</legend>
+              <div class="north-motion-options">
+                <label>
+                  <input type="radio" name="north-motion" value="house-jump" checked>
+                  <span>House Jump</span>
+                </label>
+                <label>
+                  <input type="radio" name="north-motion" value="continuous">
+                  <span>Continuous motion</span>
+                </label>
+              </div>
+            </fieldset>
           </div>
           <div class="north-chart-shell">
             <svg id="north-indian-chart"></svg>
@@ -297,7 +311,7 @@
 
       <article class="seo-article">
         <h3>Read transits in a North Indian Vedic astrology chart</h3>
-        <p>The North Indian chart keeps the twelve houses fixed. Choose an ascendant to place a sign in the first house, then the remaining signs follow through the chart. Planets move from house to house as their sidereal signs change.</p>
+        <p>The North Indian chart keeps the twelve houses fixed. Choose an ascendant to place a sign in the first house, then the remaining signs follow through the chart. Use House Jump for a compact house-based layout, or Continuous motion to place each planet along a 0° to 30° path through its current sign and house.</p>
         <p>This view is useful when you want to connect a transit with house themes. Remember that the ascendant selector is manual. For a personal interpretation, use the ascendant from an accurately calculated birth chart.</p>
       </article>
 
@@ -341,6 +355,6 @@
   <footer>
     <p>Positions are read directly from the local ephemeris files. Motion state and daily speed are derived from consecutive dates.</p>
   </footer>
-  <script type="module" src="js/app.js?v=20260715-1"></script>
+  <script type="module" src="js/app.js?v=20260715-3"></script>
 </body>
 </html>
