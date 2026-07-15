@@ -8,9 +8,9 @@
   <meta name="robots" content="index, follow">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Vedic Astrology Planetary Transits Animator">
-  <meta property="og:description" content="Explore daily sidereal transits on a circular zodiac wheel and North Indian Vedic chart, with nakshatras, padas, speeds and retrograde motion.">
+  <meta property="og:description" content="Explore daily sidereal transits on circular, North Indian, and South Indian Vedic charts, with nakshatras, padas, speeds and retrograde motion.">
   <title>Vedic Astrology Planetary Transits Animator</title>
-  <link rel="stylesheet" href="styles.css?v=20260715-3">
+  <link rel="stylesheet" href="styles.css?v=20260715-4">
   <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -40,10 +40,10 @@
             },
             {
               "@type": "Question",
-              "name": "What is the difference between the circular wheel and North Indian chart?",
+              "name": "What is the difference between circular, North Indian, and South Indian transit charts?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "The circular wheel emphasizes exact longitude, zodiac and nakshatra movement. The North Indian chart groups planets into fixed houses according to the ascendant selected by the user."
+                "text": "The circular wheel emphasizes longitude, zodiac and nakshatra movement. The North Indian chart keeps houses fixed while signs rotate from the ascendant. The South Indian chart keeps signs fixed while house numbers rotate from the ascendant."
               }
             },
             {
@@ -106,6 +106,7 @@
       <div class="chart-tabs" role="tablist" aria-label="Transit chart view">
         <button id="wheel-tab" class="chart-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="wheel-panel">Circular Wheel</button>
         <button id="north-tab" class="chart-tab" type="button" role="tab" aria-selected="false" aria-controls="north-panel" tabindex="-1">North Indian chart</button>
+        <button id="south-tab" class="chart-tab" type="button" role="tab" aria-selected="false" aria-controls="south-panel" tabindex="-1">South Indian chart</button>
       </div>
 
       <div class="chart-stage">
@@ -141,11 +142,11 @@
               <legend>Motion</legend>
               <div class="north-motion-options">
                 <label>
-                  <input type="radio" name="north-motion" value="house-jump" checked>
+                  <input type="radio" name="north-motion" value="house-jump">
                   <span>House Jump</span>
                 </label>
                 <label>
-                  <input type="radio" name="north-motion" value="continuous">
+                  <input type="radio" name="north-motion" value="continuous" checked>
                   <span>Continuous motion</span>
                 </label>
               </div>
@@ -153,6 +154,46 @@
           </div>
           <div class="north-chart-shell">
             <svg id="north-indian-chart"></svg>
+          </div>
+        </div>
+
+        <div id="south-panel" role="tabpanel" aria-labelledby="south-tab" hidden>
+          <div class="south-chart-toolbar">
+            <div class="south-toolbar-field">
+              <label for="south-ascendant-select">Ascendant</label>
+              <div class="select-wrap compact">
+                <select id="south-ascendant-select">
+                  <option value="0" selected>Aries</option>
+                  <option value="1">Taurus</option>
+                  <option value="2">Gemini</option>
+                  <option value="3">Cancer</option>
+                  <option value="4">Leo</option>
+                  <option value="5">Virgo</option>
+                  <option value="6">Libra</option>
+                  <option value="7">Scorpio</option>
+                  <option value="8">Sagittarius</option>
+                  <option value="9">Capricorn</option>
+                  <option value="10">Aquarius</option>
+                  <option value="11">Pisces</option>
+                </select>
+              </div>
+            </div>
+            <fieldset class="south-motion-control">
+              <legend>Motion</legend>
+              <div class="south-motion-options">
+                <label>
+                  <input type="radio" name="south-motion" value="house-jump">
+                  <span>House Jump</span>
+                </label>
+                <label>
+                  <input type="radio" name="south-motion" value="continuous" checked>
+                  <span>Continuous motion</span>
+                </label>
+              </div>
+            </fieldset>
+          </div>
+          <div class="south-chart-shell">
+            <svg id="south-indian-chart"></svg>
           </div>
         </div>
 
@@ -281,7 +322,7 @@
         <div class="empty-details" id="empty-details">
           <span class="empty-symbol" aria-hidden="true">✦</span>
           <h2>Planet details</h2>
-          <p>Select any planet on either chart to keep its transit data in view while the year plays.</p>
+          <p>Select any planet on a chart to keep its transit data in view while the year plays.</p>
         </div>
         <div id="selected-details" hidden></div>
       </section>
@@ -310,9 +351,9 @@
       </article>
 
       <article class="seo-article">
-        <h3>Read transits in a North Indian Vedic astrology chart</h3>
-        <p>The North Indian chart keeps the twelve houses fixed. Choose an ascendant to place a sign in the first house, then the remaining signs follow through the chart. Use House Jump for a compact house-based layout, or Continuous motion to place each planet along a 0° to 30° path through its current sign and house.</p>
-        <p>This view is useful when you want to connect a transit with house themes. Remember that the ascendant selector is manual. For a personal interpretation, use the ascendant from an accurately calculated birth chart.</p>
+        <h3>Read transits in North and South Indian Vedic astrology charts</h3>
+        <p>The North Indian chart keeps the twelve houses fixed and rotates signs from the selected ascendant. The South Indian chart keeps zodiac signs fixed in their traditional cells and rotates house numbers so the chosen ascendant becomes House 1.</p>
+        <p>Both charts offer House Jump for a compact sign-and-house layout and Continuous motion for showing each planet’s progress from 0° to 30°. The ascendant selectors are manual; for personal interpretation, use the ascendant from an accurately calculated birth chart.</p>
       </article>
 
       <article class="seo-article">
@@ -337,8 +378,8 @@
           <p>Yes. The player displays the supplied sidereal longitudes through all twelve zodiac signs and twenty-seven nakshatras, beginning with 0° Aries.</p>
         </details>
         <details>
-          <summary>What is the difference between the circular wheel and North Indian chart?</summary>
-          <p>The circular wheel emphasizes exact longitude, zodiac and nakshatra movement. The North Indian chart groups planets into fixed houses according to the ascendant you select.</p>
+          <summary>What is the difference between circular, North Indian and South Indian charts?</summary>
+          <p>The circular wheel emphasizes exact longitude, zodiac and nakshatra movement. The North Indian chart keeps houses fixed while signs rotate from the ascendant. The South Indian chart keeps signs fixed while house numbers rotate.</p>
         </details>
         <details>
           <summary>Can I view Vedic planetary transits for a specific date?</summary>
@@ -355,6 +396,6 @@
   <footer>
     <p>Positions are read directly from the local ephemeris files. Motion state and daily speed are derived from consecutive dates.</p>
   </footer>
-  <script type="module" src="js/app.js?v=20260715-3"></script>
+  <script type="module" src="js/app.js?v=20260715-4"></script>
 </body>
 </html>

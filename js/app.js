@@ -1,6 +1,7 @@
 import { TransitPlayback } from './animation.js';
 import { TransitChart } from './chart.js';
-import { NorthIndianTransitChart } from './north-indian-chart.js?v=20260715-3';
+import { NorthIndianTransitChart } from './north-indian-chart.js?v=20260715-4';
+import { SouthIndianTransitChart } from './south-indian-chart.js?v=20260715-1';
 import { YEAR_MAX, YEAR_MIN } from './constants.js?v=20260715-1';
 import { EphemerisError, loadEphemerisYear } from './ephemeris.js';
 import {
@@ -15,6 +16,7 @@ import {
 const elements = {
   svg: document.querySelector('#transit-wheel'),
   northSvg: document.querySelector('#north-indian-chart'),
+  southSvg: document.querySelector('#south-indian-chart'),
   tooltip: document.querySelector('#planet-tooltip'),
   year: document.querySelector('#year-select'),
   chartYear: document.querySelector('#chart-year'),
@@ -31,10 +33,14 @@ const elements = {
   currentDate: document.querySelector('#current-date'),
   ascendant: document.querySelector('#ascendant-select'),
   northMotionInputs: document.querySelectorAll('input[name="north-motion"]'),
+  southAscendant: document.querySelector('#south-ascendant-select'),
+  southMotionInputs: document.querySelectorAll('input[name="south-motion"]'),
   wheelTab: document.querySelector('#wheel-tab'),
   northTab: document.querySelector('#north-tab'),
+  southTab: document.querySelector('#south-tab'),
   wheelPanel: document.querySelector('#wheel-panel'),
   northPanel: document.querySelector('#north-panel'),
+  southPanel: document.querySelector('#south-panel'),
   orientationText: document.querySelector('#orientation-text'),
   positionsDate: document.querySelector('#positions-date'),
   positionsBody: document.querySelector('#positions-table-body'),
@@ -70,17 +76,23 @@ const northChart = new NorthIndianTransitChart(elements.northSvg, {
   onSelect: selectBody,
   onDeselect: clearSelection,
 });
+const southChart = new SouthIndianTransitChart(elements.southSvg, {
+  onSelect: selectBody,
+  onDeselect: clearSelection,
+});
 
 const playback = new TransitPlayback({
   reducedMotion: reducedMotionQuery.matches,
   onFrame(fromRecord, toRecord, progress, index) {
     chart.renderFrame(fromRecord, toRecord, progress);
     northChart.renderFrame(fromRecord, toRecord, progress);
+    southChart.renderFrame(fromRecord, toRecord, progress);
     renderTrails(index);
   },
   onStep(index, record) {
     updateDateInterface(index, record);
     northChart.renderRecord(record);
+    southChart.renderRecord(record);
     updatePositionsTable(record);
     updateSelectedDetails(record);
     renderTrails(index);
@@ -131,14 +143,17 @@ async function loadYear(year) {
     currentDataset = dataset;
     chart.setBodies(dataset.bodies);
     northChart.setBodies(dataset.bodies);
+    southChart.setBodies(dataset.bodies);
     const hiddenBodyIds = elements.outerPlanets.checked ? [] : OUTER_BODY_IDS;
     chart.setHiddenBodyIds(hiddenBodyIds);
     northChart.setHiddenBodyIds(hiddenBodyIds);
+    southChart.setHiddenBodyIds(hiddenBodyIds);
     if (!dataset.bodies.some((body) => body.id === selectedBodyId)) {
       selectedBodyId = null;
     }
     chart.setSelectedBody(selectedBodyId);
     northChart.setSelectedBody(selectedBodyId);
+    southChart.setSelectedBody(selectedBodyId);
     elements.slider.max = String(Math.max(0, dataset.records.length - 1));
     elements.currentDate.min = dataset.records[0].date;
     elements.currentDate.max = dataset.records.at(-1).date;
@@ -193,6 +208,8 @@ function updateControlAvailability() {
   elements.currentDate.disabled = loading || noData;
   elements.ascendant.disabled = loading || noData;
   elements.northMotionInputs.forEach((input) => { input.disabled = loading || noData; });
+  elements.southAscendant.disabled = loading || noData;
+  elements.southMotionInputs.forEach((input) => { input.disabled = loading || noData; });
 }
 
 function updateDateInterface(index, record) {
@@ -284,6 +301,7 @@ function selectBody(bodyId) {
   selectedBodyId = bodyId;
   chart.setSelectedBody(bodyId);
   northChart.setSelectedBody(bodyId);
+  southChart.setSelectedBody(bodyId);
   updateSelectedDetails(currentDataset.records[playback.index]);
   renderTrails(playback.index);
 }
@@ -293,6 +311,7 @@ function clearSelection() {
   selectedBodyId = null;
   chart.setSelectedBody(null);
   northChart.setSelectedBody(null);
+  southChart.setSelectedBody(null);
   updateSelectedDetails(currentDataset?.records[playback.index]);
   renderTrails(playback.index);
 }
@@ -357,6 +376,7 @@ function updateOuterPlanetVisibility() {
   const hiddenIds = elements.outerPlanets.checked ? [] : OUTER_BODY_IDS;
   chart.setHiddenBodyIds(hiddenIds);
   northChart.setHiddenBodyIds(hiddenIds);
+  southChart.setHiddenBodyIds(hiddenIds);
   if (!elements.outerPlanets.checked && OUTER_BODY_IDS.includes(selectedBodyId)) {
     clearSelection();
   }
@@ -366,21 +386,32 @@ function updateOuterPlanetVisibility() {
 }
 
 function switchChartTab(nextTab, focus = false) {
-  const showNorth = nextTab === 'north';
-  elements.wheelTab.classList.toggle('is-active', !showNorth);
-  elements.northTab.classList.toggle('is-active', showNorth);
-  elements.wheelTab.setAttribute('aria-selected', String(!showNorth));
-  elements.northTab.setAttribute('aria-selected', String(showNorth));
-  elements.wheelTab.tabIndex = showNorth ? -1 : 0;
-  elements.northTab.tabIndex = showNorth ? 0 : -1;
-  elements.wheelPanel.hidden = showNorth;
-  elements.northPanel.hidden = !showNorth;
-  const northMotion = document.querySelector('input[name="north-motion"]:checked')?.value ?? 'house-jump';
-  elements.orientationText.textContent = showNorth
-    ? `${elements.ascendant.options[elements.ascendant.selectedIndex].text} ascendant · ${northMotion === 'continuous' ? 'continuous motion' : 'house jump'}`
-    : '0° Aries · clockwise';
-  if (showNorth) northChart.renderRecord(currentDataset?.records[playback.index]);
-  if (focus) (showNorth ? elements.northTab : elements.wheelTab).focus();
+  const tabName = ['wheel', 'north', 'south'].includes(nextTab) ? nextTab : 'wheel';
+  const tabs = {
+    wheel: { tab: elements.wheelTab, panel: elements.wheelPanel },
+    north: { tab: elements.northTab, panel: elements.northPanel },
+    south: { tab: elements.southTab, panel: elements.southPanel },
+  };
+  Object.entries(tabs).forEach(([name, entry]) => {
+    const active = name === tabName;
+    entry.tab.classList.toggle('is-active', active);
+    entry.tab.setAttribute('aria-selected', String(active));
+    entry.tab.tabIndex = active ? 0 : -1;
+    entry.panel.hidden = !active;
+  });
+
+  if (tabName === 'north') {
+    const motion = document.querySelector('input[name="north-motion"]:checked')?.value ?? 'continuous';
+    elements.orientationText.textContent = `${elements.ascendant.options[elements.ascendant.selectedIndex].text} ascendant · ${motion === 'continuous' ? 'continuous motion' : 'house jump'}`;
+    northChart.renderRecord(currentDataset?.records[playback.index]);
+  } else if (tabName === 'south') {
+    const motion = document.querySelector('input[name="south-motion"]:checked')?.value ?? 'continuous';
+    elements.orientationText.textContent = `Fixed signs · ${elements.southAscendant.options[elements.southAscendant.selectedIndex].text} ascendant · ${motion === 'continuous' ? 'continuous motion' : 'house jump'}`;
+    southChart.renderRecord(currentDataset?.records[playback.index]);
+  } else {
+    elements.orientationText.textContent = '0° Aries · clockwise';
+  }
+  if (focus) tabs[tabName].tab.focus();
 }
 
 function bindEvents() {
@@ -417,12 +448,26 @@ function bindEvents() {
     playback.renderStill();
     if (!elements.northPanel.hidden) switchChartTab('north');
   }));
+  elements.southAscendant.addEventListener('change', () => {
+    southChart.setAscendant(Number(elements.southAscendant.value));
+    if (!elements.southPanel.hidden) switchChartTab('south');
+  });
+  elements.southMotionInputs.forEach((input) => input.addEventListener('change', () => {
+    if (!input.checked) return;
+    southChart.setMotionMode(input.value);
+    playback.renderStill();
+    if (!elements.southPanel.hidden) switchChartTab('south');
+  }));
   elements.wheelTab.addEventListener('click', () => switchChartTab('wheel'));
   elements.northTab.addEventListener('click', () => switchChartTab('north'));
-  [elements.wheelTab, elements.northTab].forEach((tab) => tab.addEventListener('keydown', (event) => {
+  elements.southTab.addEventListener('click', () => switchChartTab('south'));
+  const chartTabs = [elements.wheelTab, elements.northTab, elements.southTab];
+  chartTabs.forEach((tab, tabIndex) => tab.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
-    switchChartTab(tab === elements.wheelTab ? 'north' : 'wheel', true);
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const nextIndex = (tabIndex + direction + chartTabs.length) % chartTabs.length;
+    switchChartTab(['wheel', 'north', 'south'][nextIndex], true);
   }));
   elements.theme.addEventListener('click', () => {
     applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', true);

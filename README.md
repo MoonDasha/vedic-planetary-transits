@@ -2,7 +2,7 @@
 
 An interactive Vedic astrology transit calculator and planetary transit animator for exploring daily sidereal planetary positions from 1950 through 2050.
 
-Vedic Planetary Transits combines a circular zodiac wheel, a North Indian Vedic chart, 27 nakshatras, four padas, daily planetary speed, retrograde motion, combustion, conjunction handling, and a complete planetary positions table. The interface is built with semantic HTML, modern CSS, SVG, and vanilla JavaScript. It requires no framework, package installation, database, or build step.
+Vedic Planetary Transits combines a circular zodiac wheel, North Indian and South Indian Vedic charts, 27 nakshatras, four padas, daily planetary speed, retrograde motion, combustion, conjunction handling, and a complete planetary positions table. The interface is built with semantic HTML, modern CSS, SVG, and vanilla JavaScript. It requires no framework, package installation, database, or build step.
 
 This open source project is built by [Moon Dasha](https://moondasha.com/).
 
@@ -21,6 +21,7 @@ The calculator can help users explore questions such as:
 - Which planets are conjunct or close together?
 - Which eligible planets are combust because of their proximity to the Sun?
 - How do planetary transits appear in a North Indian Vedic astrology chart?
+- How do planetary transits appear in a fixed-sign South Indian Vedic astrology chart?
 - How does changing the ascendant redistribute zodiac signs and planets through the houses?
 
 The visualization is educational and exploratory. Transit interpretation becomes personal only when current planetary positions are compared with a natal chart, house lords, dashas, aspects, divisional charts, and the wider context of the horoscope.
@@ -32,7 +33,9 @@ The visualization is educational and exploratory. Transit interpretation becomes
 - All 12 zodiac signs with icons, names, boundaries, and degree ranges
 - All 27 nakshatras with circular labels and radial separators
 - Automatic nakshatra and pada calculations
-- North Indian Vedic astrology chart with selectable ascendant
+- North Indian Vedic astrology chart with fixed houses and selectable ascendant
+- South Indian Vedic astrology chart with fixed signs and selectable ascendant
+- House Jump and Continuous motion modes on both rectangular Vedic charts
 - Daily playback, pause, restart, previous day, next day, and jump-to-end controls
 - Calendar date selection and full-year timeline scrubbing
 - Playback speeds from 0.25x to 10x without skipping daily records
@@ -41,7 +44,7 @@ The visualization is educational and exploratory. Transit interpretation becomes
 - Combustion indicators for eligible planets
 - Stable conjunction and collision handling with separate radial tracks
 - Dedicated innermost Moon track for fast lunar movement
-- Optional Uranus, Neptune, and Pluto display on both charts
+- Optional Uranus, Neptune, and Pluto display on all three charts
 - Complete planetary positions table that always includes every available body
 - Selected-planet details and optional motion trails
 - Light and dark themes with saved user preference
@@ -66,7 +69,7 @@ The supplied ephemeris files include twelve celestial bodies:
 | Rahu |  |
 | Ketu |  |
 
-Uranus, Neptune, and Pluto are hidden from the two charts by default to preserve a traditional Vedic view. They remain available through the outer-planet toggle and are always included in the planetary positions table.
+Uranus, Neptune, and Pluto are hidden from all three charts by default to preserve a traditional Vedic view. They remain available through the outer-planet toggle and are always included in the planetary positions table.
 
 ## Circular sidereal transit wheel
 
@@ -86,6 +89,14 @@ Every occupied house displays both planet icons and planet names. House Jump red
 
 The selected ascendant is a viewing control. It does not calculate a birth ascendant because the local dataset contains daily positions without a birth time or geographic location. Use the [Moon Dasha planetary positions tool](https://moondasha.com/planetary-positions) when exact time and location are required.
 
+## South Indian Vedic astrology chart
+
+The South Indian chart keeps the twelve zodiac signs fixed in their traditional perimeter cells. Aries occupies the second cell of the top row, and the remaining signs continue clockwise. Selecting an ascendant changes the house numbers instead of moving the signs: the chosen sign becomes House 1 and the remaining houses follow in zodiac order.
+
+Continuous motion is the default. A planet at 0° begins at the boundary shared with the previous sign, reaches the center of its fixed sign cell at 15°, and approaches the next sign boundary at 30°. House Jump places planets in a compact grid inside their current fixed sign cell. Close planets receive stable side-by-side offsets without changing their astrological longitude.
+
+The South Indian chart shares the same playback date, planet selection, retrograde and combustion indicators, outer-planet visibility, responsive scaling, and daily interpolation as the circular and North Indian charts.
+
 ## Zodiac signs, nakshatras, and padas
 
 The sidereal zodiac contains 12 signs of 30 degrees each. The wheel also divides the full 360 degrees into 27 equal nakshatras. Each nakshatra spans 13 degrees 20 minutes and contains four padas of 3 degrees 20 minutes each.
@@ -98,7 +109,7 @@ Nakshatra index   = floor(longitude / 13 degrees 20 minutes)
 Pada              = floor(position within nakshatra / 3 degrees 20 minutes) + 1
 ```
 
-These calculations are centralized in `js/utils.js` so the wheel, tooltips, North Indian chart, selected-planet panel, and daily positions table use the same astrological mapping.
+These calculations are centralized in `js/utils.js` so the wheel, tooltips, North and South Indian charts, selected-planet panel, and daily positions table use the same astrological mapping.
 
 ## Retrograde motion and daily speed
 
@@ -218,6 +229,7 @@ vedic-planetary-transits/
 │   ├── controls.js
 │   ├── ephemeris.js
 │   ├── north-indian-chart.js
+│   ├── south-indian-chart.js
 │   └── utils.js
 ├── data/
 │   └── ephemeris_YYYY.json
@@ -245,7 +257,7 @@ Replace an image in place or update its configured relative path. Planetary icon
 
 Light and dark palettes use CSS custom properties near the top of `styles.css`. Edit the variables under `:root` and `:root[data-theme="dark"]` to customize backgrounds, text, borders, rings, accents, and marker treatments.
 
-The manual theme choice is stored in `localStorage`. Without a saved preference, the interface follows `prefers-color-scheme`. Responsive breakpoints abbreviate nakshatra labels, reorganize controls, and stack content for smaller screens. The SVG wheel and North Indian chart scale without losing sharpness.
+The manual theme choice is stored in `localStorage`. Without a saved preference, the interface follows `prefers-color-scheme`. Responsive breakpoints abbreviate nakshatra labels, reorganize controls, and stack content for smaller screens. All three SVG charts scale without losing sharpness.
 
 The application also respects `prefers-reduced-motion`. Users can step through dates without smooth orbital interpolation when reduced motion is enabled.
 

@@ -9,6 +9,12 @@ import {
   layoutContinuousBodies,
 } from '../js/north-indian-chart.js';
 import {
+  getSouthContinuousPoint,
+  getSouthHouseForLongitude,
+  layoutSouthContinuousBodies,
+  SOUTH_SIGN_CENTERS,
+} from '../js/south-indian-chart.js';
+import {
   getNakshatraPosition,
   longitudeToPoint,
   shortestSignedDelta,
@@ -114,6 +120,46 @@ assert.equal(mercuryContinuous.groupSize, 2);
 assert.ok(
   Math.hypot(saturnContinuous.x - mercuryContinuous.x, saturnContinuous.y - mercuryContinuous.y) >= 28,
   'planets sharing a path position should receive side-by-side offsets',
+);
+
+assert.deepEqual(SOUTH_SIGN_CENTERS[0], [310, 130], 'Aries remains fixed in the top row');
+assert.deepEqual(SOUTH_SIGN_CENTERS[3], [670, 310], 'Cancer remains fixed in the upper-right cell');
+assert.deepEqual(SOUTH_SIGN_CENTERS[6], [490, 670], 'Libra remains fixed in the bottom row');
+assert.deepEqual(SOUTH_SIGN_CENTERS[9], [130, 490], 'Capricorn remains fixed in the lower-left cell');
+assert.equal(getSouthHouseForLongitude(5, 0), 1);
+assert.equal(getSouthHouseForLongitude(5, 9), 4, 'Aries becomes house four for Capricorn ascendant');
+assert.equal(getSouthHouseForLongitude(275, 9), 1, 'Capricorn becomes house one for Capricorn ascendant');
+
+const southAriesIngress = getSouthContinuousPoint(0, 0);
+const southAriesMiddle = getSouthContinuousPoint(15, 0);
+const southAriesEgress = getSouthContinuousPoint(29.999999, 0);
+const southTaurusIngress = getSouthContinuousPoint(30, 0);
+assert.deepEqual(
+  { x: Math.round(southAriesIngress.x), y: Math.round(southAriesIngress.y) },
+  { x: 220, y: 130 },
+  'South continuous motion should enter Aries at its Pisces boundary',
+);
+assert.deepEqual(
+  { x: Math.round(southAriesMiddle.x), y: Math.round(southAriesMiddle.y) },
+  { x: 310, y: 130 },
+  '15° Aries should occupy the fixed Aries cell center',
+);
+assert.ok(
+  Math.hypot(southAriesEgress.x - southTaurusIngress.x, southAriesEgress.y - southTaurusIngress.y) < 0.001,
+  'South sign paths should share exact 30°/0° boundary points',
+);
+
+const southConjunction = layoutSouthContinuousBodies([
+  { config: { id: 'venus', defaultOrder: 5 }, longitude: 255 },
+  { config: { id: 'mars', defaultOrder: 2 }, longitude: 255 },
+], 0);
+assert.equal(southConjunction.get('venus').groupSize, 2);
+assert.ok(
+  Math.hypot(
+    southConjunction.get('venus').x - southConjunction.get('mars').x,
+    southConjunction.get('venus').y - southConjunction.get('mars').y,
+  ) >= 28,
+  'South continuous conjunctions should receive deterministic side-by-side lanes',
 );
 
 const raw2024 = await readYear(2024);
