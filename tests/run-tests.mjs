@@ -110,7 +110,7 @@ assert.equal(sparse.records[1].planets.sun.speed, 1, 'speed should account for m
 assert.equal(sparse.records[1].planets.moon, undefined, 'one invalid body must not reject the daily record');
 assert.equal(sparse.records[1].planets.sun.unwrappedLongitude, 361, 'direct wrap should remain continuous');
 
-for (let year = 2000; year <= 2050; year += 1) {
+for (let year = 1950; year <= 2050; year += 1) {
   const normalized = normalizeEphemeris(await readYear(year), year);
   assert.equal(normalized.records[0].date, `${year}-01-01`);
   assert.equal(normalized.records.at(-1).date, `${year}-12-31`);

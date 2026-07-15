@@ -1,6 +1,6 @@
 # Vedic Planetary Transits
 
-An interactive Vedic astrology transit calculator and planetary transit animator for exploring daily sidereal planetary positions from 2000 through 2050.
+An interactive Vedic astrology transit calculator and planetary transit animator for exploring daily sidereal planetary positions from 1950 through 2050.
 
 Vedic Planetary Transits combines a circular zodiac wheel, a North Indian Vedic chart, 27 nakshatras, four padas, daily planetary speed, retrograde motion, combustion, conjunction handling, and a complete planetary positions table. The interface is built with semantic HTML, modern CSS, SVG, and vanilla JavaScript. It requires no framework, package installation, database, or build step.
 
@@ -27,7 +27,7 @@ The visualization is educational and exploratory. Transit interpretation becomes
 
 ## Key features
 
-- Daily Vedic planetary transits from 2000 to 2050
+- Daily Vedic planetary transits from 1950 to 2050
 - Sidereal zodiac wheel with Aries at the top and longitude increasing clockwise
 - All 12 zodiac signs with icons, names, boundaries, and degree ranges
 - All 27 nakshatras with circular labels and radial separators
@@ -158,8 +158,8 @@ node tests/run-tests.mjs
 The repository contains one JSON file per year:
 
 ```text
-data/ephemeris_2000.json
-data/ephemeris_2001.json
+data/ephemeris_1950.json
+data/ephemeris_1951.json
 ...
 data/ephemeris_2050.json
 ```

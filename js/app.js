@@ -1,7 +1,7 @@
 import { TransitPlayback } from './animation.js';
 import { TransitChart } from './chart.js';
 import { NorthIndianTransitChart } from './north-indian-chart.js?v=20260714-4';
-import { YEAR_MAX, YEAR_MIN } from './constants.js';
+import { YEAR_MAX, YEAR_MIN } from './constants.js?v=20260715-1';
 import { EphemerisError, loadEphemerisYear } from './ephemeris.js';
 import {
   escapeHtml,
